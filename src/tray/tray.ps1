@@ -1,4 +1,4 @@
-# タスクトレイアイコンを表示するヘルパースクリプト。
+﻿# タスクトレイアイコンを表示するヘルパースクリプト。
 # Node側から子プロセスとして起動され、「終了」クリック時に標準出力へ "EXIT" を出力して自身も終了する。
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
