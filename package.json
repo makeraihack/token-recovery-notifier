@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Claude Code CLIのレート制限リセットをWindows Toast通知で知らせる常駐アプリ",
   "private": true,
+  "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && node scripts/copy-assets.js",
