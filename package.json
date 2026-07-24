@@ -1,0 +1,21 @@
+{
+  "name": "token-recovery-notifier",
+  "version": "0.1.0",
+  "description": "Claude Code CLIのレート制限リセットをWindows Toast通知で知らせる常駐アプリ",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "node-notifier": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/node-notifier": "^8.0.5",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}
