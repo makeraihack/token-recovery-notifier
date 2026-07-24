@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { CLAUDE_PROJECTS_DIR, WATCH_POLL_INTERVAL_MS } from "../config";
+import { CLAUDE_PROJECTS_DIR, STARTUP_SCAN_MAX_BYTES, WATCH_POLL_INTERVAL_MS } from "../config";
 import { logger } from "../logger";
 import { parseRateLimitLine, type RateLimitEvent } from "../parser/rateLimitParser";
 import { TailReader } from "./tailReader";
@@ -110,9 +110,12 @@ export class ProjectsWatcher {
 
   private async processFile(filePath: string): Promise<void> {
     this.trackedFiles.add(filePath);
+    const isFirstEncounter = !this.tailReader.hasState(filePath);
     let newLines: string[];
     try {
-      newLines = await this.tailReader.readNewLines(filePath);
+      newLines = isFirstEncounter
+        ? await this.tailReader.scanTailForBaseline(filePath, STARTUP_SCAN_MAX_BYTES)
+        : await this.tailReader.readNewLines(filePath);
     } catch (err) {
       logger.error(`tail読み取り中にエラーが発生しました: ${filePath} (${(err as Error).message})`);
       return;

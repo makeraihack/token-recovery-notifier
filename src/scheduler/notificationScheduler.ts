@@ -23,6 +23,14 @@ export class NotificationScheduler {
 
   schedule(resetAt: Date, kind: RateLimitKind): void {
     const key = resetAt.getTime();
+
+    if (key <= Date.now()) {
+      // 起動時バックログスキャンで見つかった、既にリセット済みの過去のイベントの可能性がある。
+      // 過去時刻へ即時通知してしまうと誤発火になるためスケジュールしない。
+      logger.info(`リセット時刻 ${resetAt.toISOString()} は既に過ぎているため通知をスケジュールしません`);
+      return;
+    }
+
     if (this.scheduledResetTimes.has(key)) {
       logger.info(`リセット時刻 ${resetAt.toISOString()} への通知は既に予約済みのためスキップします`);
       return;

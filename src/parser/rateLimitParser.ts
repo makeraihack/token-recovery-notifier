@@ -14,9 +14,27 @@ interface TranscriptLine {
   type?: string;
   error?: string;
   isApiErrorMessage?: boolean;
+  timestamp?: string;
   message?: {
     content?: Array<{ type?: string; text?: string }>;
   };
+}
+
+/**
+ * 行自体が記録された時刻(transcriptの"timestamp"フィールド)を採用する。
+ * 起動時のバックログスキャンでは「読み取った瞬間」ではなく「メッセージが実際に
+ * 記録された時刻」を基準にresets時刻を解釈しないと、過去のイベントを未来の
+ * イベントとして誤判定してしまう(resetsテキストは時刻のみで日付を含まないため)。
+ */
+function resolveDetectedAt(line: TranscriptLine, sourceFile: string): Date {
+  if (line.timestamp) {
+    const parsed = new Date(line.timestamp);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  logger.warn(
+    `timestampフィールドを取得できなかったため、検知時刻を現在時刻で代用します（フォーマット不一致の可能性）: ${sourceFile}`
+  );
+  return new Date();
 }
 
 function extractText(line: TranscriptLine): string | null {
@@ -65,7 +83,7 @@ export function parseRateLimitLine(rawLine: string, sourceFile: string): RateLim
   return {
     kind: classifyKind(text),
     rawText: text,
-    detectedAt: new Date(),
+    detectedAt: resolveDetectedAt(parsed, sourceFile),
     sourceFile,
   };
 }

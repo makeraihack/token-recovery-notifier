@@ -14,6 +14,50 @@ interface FileTailState {
 export class TailReader {
   private readonly state = new Map<string, FileTailState>();
 
+  hasState(filePath: string): boolean {
+    return this.state.has(filePath);
+  }
+
+  /**
+   * ファイル初回検知時、末尾から最大maxScanBytesバイトだけを遡って走査し、
+   * その範囲に含まれる完全な行を返す（アプリ起動時に既に発生していた、まだ
+   * リセット前かもしれないrate_limitイベントを取りこぼさないための一度きりの
+   * バックログスキャン）。全体再読み込みは避け、以降はreadNewLinesによる
+   * 差分tailに切り替わる。
+   */
+  async scanTailForBaseline(filePath: string, maxScanBytes: number): Promise<string[]> {
+    let stat: fs.Stats;
+    try {
+      stat = await fsp.stat(filePath);
+    } catch {
+      logger.warn(`ファイルのstatに失敗しました（削除された可能性があります）: ${filePath}`);
+      return [];
+    }
+
+    const start = Math.max(0, stat.size - maxScanBytes);
+    const length = stat.size - start;
+    if (length <= 0) {
+      this.state.set(filePath, { offset: stat.size, pending: "" });
+      return [];
+    }
+
+    const buffer = Buffer.alloc(length);
+    const fh = await fsp.open(filePath, "r");
+    try {
+      await fh.read(buffer, 0, length, start);
+    } finally {
+      await fh.close();
+    }
+
+    const split = buffer.toString("utf8").split("\n");
+    const pending = split.pop() ?? "";
+    // startが0より大きい場合、先頭要素は任意バイト位置から読み始めた断片行なので破棄する
+    const lines = start > 0 ? split.slice(1) : split;
+
+    this.state.set(filePath, { offset: stat.size, pending });
+    return lines;
+  }
+
   async readNewLines(filePath: string): Promise<string[]> {
     let stat: fs.Stats;
     try {
@@ -26,7 +70,8 @@ export class TailReader {
 
     const current = this.state.get(filePath);
     if (!current) {
-      // 初回検知時は既存の過去ログを遡って処理せず、以降の追記のみを監視対象にする
+      // readNewLinesが先に呼ばれた場合(想定外の呼び出し順)も、全体再読み込みは避けて
+      // baselineのみ設定する。バックログスキャンはscanTailForBaselineの責務。
       this.state.set(filePath, { offset: stat.size, pending: "" });
       return [];
     }
