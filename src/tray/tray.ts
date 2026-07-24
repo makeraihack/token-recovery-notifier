@@ -18,6 +18,18 @@ function buildEncodedCommand(scriptPath: string): string {
   return Buffer.from(scriptContent, "utf16le").toString("base64");
 }
 
+const CLIXML_HEADER_PATTERN = /^#<\s*CLIXML\s*/i;
+
+/**
+ * PowerShellは-NonInteractive+パイプ実行時、エラーストリームが空でも
+ * "#< CLIXML" ヘッダーだけを標準エラーへ書き出すことがある(実害のない正常動作)。
+ * ヘッダーを取り除いた残りが空ならノイズとみなしtrueを返す。
+ * 実際のエラー内容(例: `<S S="Error">...`)が続く場合はfalseを返し、警告扱いを維持する。
+ */
+export function isCliXmlHeaderOnly(text: string): boolean {
+  return text.replace(CLIXML_HEADER_PATTERN, "").trim().length === 0;
+}
+
 /** PowerShell(System.Windows.Forms.NotifyIcon)でタスクトレイアイコンを表示する。 */
 export class TrayIcon {
   private child: TrayChildProcess | null = null;
@@ -51,7 +63,9 @@ export class TrayIcon {
       }
     });
     this.child.stderr.on("data", (data: Buffer) => {
-      logger.warn(`タスクトレイプロセスの標準エラー出力: ${data.toString("utf8").trim()}`);
+      const text = data.toString("utf8");
+      if (isCliXmlHeaderOnly(text)) return;
+      logger.warn(`タスクトレイプロセスの標準エラー出力: ${text.trim()}`);
     });
     this.child.on("error", (err) => {
       logger.error(`タスクトレイプロセスでエラーが発生しました: ${err.message}`);
