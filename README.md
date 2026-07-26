@@ -65,4 +65,8 @@ Windows向けの配布形式として、**ビルド済みJS + 本番用`node_mod
 
 ## ライセンス
 
-[MIT License](./LICENSE) の下で公開しています。改変・商用利用を問わず自由にご利用いただけます。気に入っていただけたら、GitHub Sponsors等での投げ銭（導線は準備中です）で応援していただけると励みになります。
+[MIT License](./LICENSE) の下で公開しています。改変・商用利用を問わず自由にご利用いただけます。
+
+## サポート・投げ銭
+
+気に入っていただけたら、[GitHub Sponsors](https://github.com/sponsors/makeraihack) で応援していただけると励みになります（note記事公開時にはそちらにも投げ銭リンクを追加予定です）。
