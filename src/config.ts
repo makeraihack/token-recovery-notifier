@@ -21,6 +21,9 @@ export const STARTUP_SCAN_MAX_BYTES = 256 * 1024;
 
 export const LOG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "app.log");
 
+// Slack Webhook URLなどユーザー固有の設定を置くファイル(任意・未設定でも動作する)
+export const USER_CONFIG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "config.json");
+
 export const AUTOLAUNCH_REGISTRY_KEY =
   "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 export const AUTOLAUNCH_VALUE_NAME = "TokenRecoveryNotifier";

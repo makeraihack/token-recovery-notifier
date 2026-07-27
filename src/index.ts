@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import { parseResetTimeText } from "./parser/resetTimeParser";
 import { NotificationScheduler } from "./scheduler/notificationScheduler";
 import { sendResetNotification } from "./notifier/toastNotifier";
+import { sendSlackResetNotification } from "./notifier/slackNotifier";
 import { enableAutoLaunch } from "./startup/autoLaunch";
 import { TrayIcon } from "./tray/tray";
 import { ProjectsWatcher } from "./watcher/projectsWatcher";
@@ -12,6 +13,7 @@ logger.info(`${APP_NAME} を起動します`);
 const scheduler = new NotificationScheduler(({ resetAt, kind }) => {
   logger.info(`リセット時刻 ${resetAt.toISOString()} に到達したため通知します（種別: ${kind}）`);
   sendResetNotification(kind);
+  sendSlackResetNotification(kind);
 });
 
 const watcher = new ProjectsWatcher((event) => {
