@@ -49,6 +49,23 @@ npm start
 - **終了する**には、タスクトレイアイコンを右クリックし、メニューから「終了」を選んでください。
 - ログは `%USERPROFILE%\.token-recovery-notifier\app.log` に出力されます。動作がおかしいと感じたときはまずこちらを確認してください。
 
+## Slack通知の設定方法（任意）
+
+Windowsのトースト通知に加えて、Slackにも同時に通知したい場合は以下の手順で設定できます。設定しない場合は、これまで通りWindows Toast通知のみが動作します（エラーにはなりません）。
+
+1. Slackのワークスペースで **Incoming Webhook** を作成し、Webhook URL（`https://hooks.slack.com/services/...`）を取得します。手順はSlack公式ドキュメント（[Incoming Webhooksを使用する](https://api.slack.com/messaging/webhooks)）を参照してください。
+2. `%USERPROFILE%\.token-recovery-notifier\config.json` を作成し、以下の形式で取得したWebhook URLを記述します（`.token-recovery-notifier` フォルダが存在しない場合は作成してください）。
+
+    ```json
+    {
+      "slackWebhookUrl": "https://hooks.slack.com/services/xxxxx/xxxxx/xxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+    ```
+
+3. アプリを再起動すると設定が反映されます。以降、レート制限がリセットされたタイミングでWindows ToastとSlackの両方に通知が届きます。
+
+`config.json` が存在しない場合や `slackWebhookUrl` が未設定・空の場合は、Slack通知は行われず、代わりに起動時にログへその旨の案内が一度だけ出力されます（アプリ自体はエラーにならず、Windows Toast通知のみで動作を続けます）。
+
 ## 既知の制約・注意事項（正直な開示）
 
 - **非公式の内部ファイル形式に依存しています。** Claude Code CLIが `~/.claude/projects/**/*.jsonl` に書き出すセッションログの内容・文言は、Anthropicが公式にサポートするAPIではなく、CLIの内部実装です。CLIのバージョンアップでフォーマットが変わると、検知が正しく動作しなくなる可能性があります（フォーマット不一致を検知した場合はログに警告を出す設計にしていますが、検知自体が完全に止まってしまう可能性はあります）。
