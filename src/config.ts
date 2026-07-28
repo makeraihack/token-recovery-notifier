@@ -27,3 +27,12 @@ export const USER_CONFIG_FILE_PATH = path.join(os.homedir(), ".token-recovery-no
 export const AUTOLAUNCH_REGISTRY_KEY =
   "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 export const AUTOLAUNCH_VALUE_NAME = "TokenRecoveryNotifier";
+
+// 自動起動時、ウィンドウを一切表示せずnode.exeを起動するためのVBScriptランチャーの保存先。
+// (直接node.exeをRunキーに登録すると、ログイン毎にコンソールウィンドウが表示され、
+// 誤って閉じられると常駐が止まってしまうため、非表示起動の中継役として使う)
+export const AUTOLAUNCH_LAUNCHER_SCRIPT_PATH = path.join(
+  os.homedir(),
+  ".token-recovery-notifier",
+  "launcher.vbs"
+);
