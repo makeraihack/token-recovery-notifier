@@ -44,8 +44,8 @@ function extractText(line: TranscriptLine): string | null {
   return textPart?.text ?? null;
 }
 
-// PLAN.mdの技術調査結果より、週次メッセージの実例は未確認。
-// "week"を含むかどうかで暫定的に種別分岐し、実例判明時にここへパターンを追加できるようにする。
+// 週次メッセージの実例は2026-07-29に実データで確認済み（"You've hit your weekly limit · resets Aug 1, 10pm (Etc/GMT-9)"）。
+// セッション上限とは異なり月名+日付が前置される点はresetTimeParser側で対応済み。
 function classifyKind(text: string): RateLimitKind {
   const lower = text.toLowerCase();
   if (lower.includes("week")) return "weekly";
