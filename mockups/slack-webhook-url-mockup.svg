@@ -1,0 +1,46 @@
+<svg width="1000" height="420" viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="winShadow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="18" flood-color="#1b2030" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="420" fill="#eef0f2"/>
+
+  <g filter="url(#winShadow2)">
+    <rect x="40" y="30" width="920" height="360" rx="10" fill="#ffffff"/>
+  </g>
+
+  <rect x="40" y="30" width="920" height="44" rx="10" fill="#f4f4f6"/>
+  <rect x="40" y="60" width="920" height="14" fill="#f4f4f6"/>
+  <circle cx="66" cy="52" r="6" fill="#ff5f57"/>
+  <circle cx="86" cy="52" r="6" fill="#febc2e"/>
+  <circle cx="106" cy="52" r="6" fill="#28c840"/>
+  <rect x="140" y="42" width="420" height="20" rx="6" fill="#ffffff" stroke="#dcdfe3"/>
+  <text x="152" y="57" font-family="Segoe UI, sans-serif" font-size="12" fill="#6b7280">api.slack.com/apps/A0XXXXX/incoming-webhooks</text>
+
+  <text x="72" y="118" font-family="Segoe UI, sans-serif" font-size="20" font-weight="800" fill="#1d1c1d">Webhook URLs for Your Workspace</text>
+  <text x="72" y="144" font-family="Segoe UI, sans-serif" font-size="13" fill="#616061">Add this webhook to your workspace below to activate this curl example.</text>
+
+  <!-- table header -->
+  <line x1="72" y1="168" x2="888" y2="168" stroke="#e4e4e6"/>
+  <text x="80" y="190" font-family="Segoe UI, sans-serif" font-size="12" font-weight="700" fill="#616061">WEBHOOK URL</text>
+  <text x="580" y="190" font-family="Segoe UI, sans-serif" font-size="12" font-weight="700" fill="#616061">CHANNEL</text>
+  <text x="740" y="190" font-family="Segoe UI, sans-serif" font-size="12" font-weight="700" fill="#616061">ADDED BY</text>
+
+  <!-- table row -->
+  <rect x="60" y="204" width="880" height="56" rx="6" fill="#f8f8fa"/>
+
+  <rect x="80" y="218" width="420" height="28" rx="4" fill="#ffffff" stroke="#dcdfe3"/>
+  <text x="92" y="237" font-family="Consolas, monospace" font-size="12" fill="#454245">https://hooks.slack.com/services/••••••</text>
+
+  <rect x="510" y="218" width="60" height="28" rx="4" fill="#4a154b"/>
+  <text x="540" y="237" font-family="Segoe UI, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#ffffff">Copy</text>
+
+  <text x="580" y="237" font-family="Segoe UI, sans-serif" font-size="14" fill="#1d1c1d"># claude-code-alert</text>
+
+  <text x="740" y="232" font-family="Segoe UI, sans-serif" font-size="13" fill="#1264a3">メーカーハック</text>
+  <text x="740" y="250" font-family="Segoe UI, sans-serif" font-size="11" fill="#8a8d91">Jul 27, 2026</text>
+
+  <text x="72" y="300" font-family="Segoe UI, sans-serif" font-size="12" fill="#8a8d91">※このURLをアプリの config.json に貼り付けます</text>
+</svg>

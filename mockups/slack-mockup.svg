@@ -1,0 +1,40 @@
+<svg width="900" height="360" viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="avatarGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a154b"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#1b2030" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="360" fill="#f4f4f6"/>
+
+  <g filter="url(#cardShadow)">
+    <rect x="60" y="40" width="780" height="280" rx="10" fill="#ffffff" stroke="#e4e4e6" stroke-width="1.5"/>
+  </g>
+
+  <!-- slack channel header -->
+  <rect x="60" y="40" width="780" height="52" rx="10" fill="#350d36"/>
+  <rect x="60" y="72" width="780" height="20" fill="#350d36"/>
+  <text x="88" y="74" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="17" font-weight="700" fill="#ffffff">
+    <tspan fill="#c9a6cb"># </tspan>claude-code-alert
+  </text>
+
+  <!-- message row -->
+  <rect x="88" y="132" width="56" height="56" rx="10" fill="url(#avatarGrad)"/>
+  <text x="116" y="168" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="24" text-anchor="middle" fill="white">🤖</text>
+
+  <text x="164" y="148" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="17" font-weight="700" fill="#1d1c1d">Token Recovery Notifier</text>
+  <rect x="410" y="132" width="40" height="20" rx="4" fill="#e8e8e8"/>
+  <text x="430" y="147" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="11" text-anchor="middle" fill="#616061">APP</text>
+  <text x="700" y="148" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="13" fill="#969696">午前10:48</text>
+
+  <text x="164" y="182" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="17" fill="#1d1c1d">⏰ Claude Codeのセッション利用上限がリセットされました。</text>
+  <text x="164" y="210" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="17" fill="#1d1c1d">作業を再開できます。</text>
+
+  <!-- reactions row -->
+  <rect x="164" y="240" width="60" height="28" rx="14" fill="#f0f0f0" stroke="#e4e4e6"/>
+  <text x="194" y="259" font-family="Segoe UI, sans-serif" font-size="14" text-anchor="middle" fill="#1d1c1d">🎉 1</text>
+</svg>

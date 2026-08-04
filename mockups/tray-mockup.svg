@@ -1,0 +1,36 @@
+<svg width="900" height="260" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b7bff"/>
+      <stop offset="100%" stop-color="#1a3fb0"/>
+    </linearGradient>
+    <filter id="menuShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1b2030" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="260" fill="#eef1f5"/>
+
+  <!-- taskbar -->
+  <rect x="0" y="210" width="900" height="50" fill="#1f2430"/>
+  <!-- tray icons cluster -->
+  <rect x="700" y="222" width="150" height="26" rx="6" fill="#2a3040"/>
+  <circle cx="716" cy="235" r="8" fill="#9aa0ab"/>
+  <circle cx="740" cy="235" r="8" fill="#9aa0ab"/>
+  <rect x="758" y="227" width="18" height="18" rx="4" fill="url(#iconGrad2)"/>
+  <circle cx="800" cy="235" r="8" fill="#9aa0ab"/>
+  <text x="855" y="240" font-family="Segoe UI, sans-serif" font-size="13" fill="#c8ccd6">10:48</text>
+
+  <!-- context menu popup above the app's tray icon -->
+  <g filter="url(#menuShadow)">
+    <rect x="700" y="130" width="150" height="70" rx="8" fill="#ffffff" stroke="#d9dce1"/>
+  </g>
+  <rect x="700" y="130" width="150" height="34" rx="8" fill="#f3f4f6"/>
+  <rect x="712" y="141" width="16" height="16" rx="4" fill="url(#iconGrad2)"/>
+  <text x="736" y="153" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="13" font-weight="600" fill="#1b1e24">Token Recovery</text>
+  <line x1="700" y1="164" x2="850" y2="164" stroke="#e4e4e6"/>
+  <text x="720" y="186" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="14" fill="#3a3f4b">終了</text>
+
+  <!-- pointer line from icon to menu -->
+  <line x1="767" y1="227" x2="767" y2="200" stroke="#9aa0ab" stroke-width="1.5" stroke-dasharray="3,3"/>
+</svg>

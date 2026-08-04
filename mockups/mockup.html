@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Segoe UI Fallback";
+    src: local("Segoe UI"), local("Yu Gothic UI"), local("Meiryo");
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px;
+    background: #eef1f5;
+    font-family: "Segoe UI Fallback", "Yu Gothic UI", "Meiryo", sans-serif;
+  }
+  .stage {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    width: 420px;
+  }
+
+  /* Windows 11 style toast */
+  .win-toast {
+    background: rgba(245, 246, 248, 0.98);
+    border: 1px solid #d9dce1;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .win-toast .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #2b6cff, #1a3fb0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .win-toast .body { flex: 1; }
+  .win-toast .app-name {
+    font-size: 12px;
+    color: #5b6270;
+    margin-bottom: 2px;
+  }
+  .win-toast .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1b1e24;
+    margin-bottom: 3px;
+  }
+  .win-toast .message {
+    font-size: 13px;
+    color: #3a3f4b;
+    line-height: 1.4;
+  }
+  .win-toast .close {
+    color: #8a90a0;
+    font-size: 14px;
+  }
+
+  /* Slack style message */
+  .slack-panel {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+    overflow: hidden;
+    border: 1px solid #e4e4e6;
+  }
+  .slack-header {
+    background: #350d36;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slack-header .hash { opacity: 0.7; font-weight: 400; }
+  .slack-msg {
+    display: flex;
+    gap: 10px;
+    padding: 14px;
+  }
+  .slack-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4a154b, #1a1a2e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .slack-msg .bot-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  .slack-msg .bot-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1d1c1d;
+  }
+  .slack-msg .bot-tag {
+    background: #e8e8e8;
+    color: #616061;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .slack-msg .time {
+    font-size: 11px;
+    color: #969696;
+  }
+  .slack-msg .text {
+    font-size: 14px;
+    color: #1d1c1d;
+    line-height: 1.5;
+  }
+
+  .label {
+    font-size: 11px;
+    color: #9aa0ab;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div>
+      <div class="label">Windows Toast</div>
+      <div class="win-toast">
+        <div class="icon">⏰</div>
+        <div class="body">
+          <div class="app-name">Token Recovery Notifier</div>
+          <div class="title">Claude Codeの利用上限がリセットされました</div>
+          <div class="message">作業を再開できます。</div>
+        </div>
+        <div class="close">✕</div>
+      </div>
+    </div>
+    <div>
+      <div class="label">Slack</div>
+      <div class="slack-panel">
+        <div class="slack-header">
+          <span>#</span> claude-code-alert
+        </div>
+        <div class="slack-msg">
+          <div class="slack-avatar">🤖</div>
+          <div class="body">
+            <div class="bot-row">
+              <span class="bot-name">Token Recovery Notifier</span>
+              <span class="bot-tag">APP</span>
+              <span class="time">午前10:48</span>
+            </div>
+            <div class="text">⏰ Claude Codeのセッション利用上限がリセットされました。作業を再開できます。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
