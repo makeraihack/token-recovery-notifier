@@ -4,7 +4,7 @@ export type RateLimitKind = "session" | "weekly" | "unknown";
 
 export interface RateLimitEvent {
   kind: RateLimitKind;
-  /** 合成メッセージの生テキスト（例: "You've hit your session limit · resets 11pm (Etc/GMT-9)"） */
+  /** Raw text of the synthetic message (e.g. "You've hit your session limit · resets 11pm (Etc/GMT-9)") */
   rawText: string;
   detectedAt: Date;
   sourceFile: string;
@@ -21,10 +21,11 @@ interface TranscriptLine {
 }
 
 /**
- * 行自体が記録された時刻(transcriptの"timestamp"フィールド)を採用する。
- * 起動時のバックログスキャンでは「読み取った瞬間」ではなく「メッセージが実際に
- * 記録された時刻」を基準にresets時刻を解釈しないと、過去のイベントを未来の
- * イベントとして誤判定してしまう(resetsテキストは時刻のみで日付を含まないため)。
+ * Uses the time the line itself was recorded (the transcript's "timestamp" field).
+ * When scanning the backlog at startup, the reset text must be interpreted relative to
+ * the time the message was actually recorded, not the moment it happens to be read —
+ * otherwise a past event can be misjudged as a future one (the "resets" text carries a
+ * time only, no date).
  */
 function resolveDetectedAt(line: TranscriptLine, sourceFile: string): Date {
   if (line.timestamp) {
@@ -32,7 +33,7 @@ function resolveDetectedAt(line: TranscriptLine, sourceFile: string): Date {
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
   logger.warn(
-    `timestampフィールドを取得できなかったため、検知時刻を現在時刻で代用します（フォーマット不一致の可能性）: ${sourceFile}`
+    `Could not read the timestamp field, so the current time is being used as the detected time instead (possible format mismatch): ${sourceFile}`
   );
   return new Date();
 }
@@ -44,8 +45,9 @@ function extractText(line: TranscriptLine): string | null {
   return textPart?.text ?? null;
 }
 
-// 週次メッセージの実例は2026-07-29に実データで確認済み（"You've hit your weekly limit · resets Aug 1, 10pm (Etc/GMT-9)"）。
-// セッション上限とは異なり月名+日付が前置される点はresetTimeParser側で対応済み。
+// A real example of the weekly message was confirmed against live data on 2026-07-29
+// ("You've hit your weekly limit · resets Aug 1, 10pm (Etc/GMT-9)"). Unlike the session
+// limit, it's prefixed with a month name + day, which resetTimeParser already handles.
 function classifyKind(text: string): RateLimitKind {
   const lower = text.toLowerCase();
   if (lower.includes("week")) return "weekly";
@@ -54,8 +56,9 @@ function classifyKind(text: string): RateLimitKind {
 }
 
 /**
- * transcript jsonlの1行(JSON文字列)を解析し、合成レート制限メッセージであれば抽出する。
- * フォーマット不一致は例外にせず null を返し、呼び出し側でログ警告する。
+ * Parses a single line (a JSON string) from a transcript jsonl file and extracts it if it's
+ * a synthetic rate-limit message. A format mismatch returns null rather than throwing; the
+ * caller is responsible for logging a warning.
  */
 export function parseRateLimitLine(rawLine: string, sourceFile: string): RateLimitEvent | null {
   const trimmed = rawLine.trim();
@@ -65,7 +68,7 @@ export function parseRateLimitLine(rawLine: string, sourceFile: string): RateLim
   try {
     parsed = JSON.parse(trimmed);
   } catch {
-    // tail読み取り中の未確定行(書き込み途中)の可能性があるため、警告ではなく無視する
+    // Likely an incomplete line still being written while tailing, so ignore silently instead of warning
     return null;
   }
 
@@ -75,7 +78,7 @@ export function parseRateLimitLine(rawLine: string, sourceFile: string): RateLim
   const text = extractText(parsed);
   if (!text) {
     logger.warn(
-      `rate_limitフラグを持つ行だがテキストを抽出できませんでした（フォーマット不一致の可能性）: ${sourceFile}`
+      `Found a line flagged as rate_limit but couldn't extract its text (possible format mismatch): ${sourceFile}`
     );
     return null;
   }

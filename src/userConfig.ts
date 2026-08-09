@@ -17,19 +17,19 @@ function readConfigFile(): UserConfig {
     const raw = fs.readFileSync(USER_CONFIG_FILE_PATH, "utf-8");
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) {
-      logger.warn(`設定ファイルの形式が不正です (${USER_CONFIG_FILE_PATH}): JSONオブジェクトではありません`);
+      logger.warn(`Config file is malformed (${USER_CONFIG_FILE_PATH}): not a JSON object`);
       return {};
     }
     return parsed as UserConfig;
   } catch (err) {
     logger.warn(
-      `設定ファイルの読み込みに失敗しました (${USER_CONFIG_FILE_PATH}): ${err instanceof Error ? err.message : String(err)}`
+      `Failed to read config file (${USER_CONFIG_FILE_PATH}): ${err instanceof Error ? err.message : String(err)}`
     );
     return {};
   }
 }
 
-/** ユーザー設定ファイルを読み込む(初回のみファイルアクセスし、以降はキャッシュを返す)。 */
+/** Loads the user config file (reads the file once, then returns a cached value). */
 export function loadUserConfig(): UserConfig {
   if (cachedConfig === null) {
     cachedConfig = readConfigFile();
@@ -37,7 +37,7 @@ export function loadUserConfig(): UserConfig {
   return cachedConfig;
 }
 
-/** Slack Webhook URLを返す。未設定の場合はundefinedを返し、起動後一度だけ案内ログを出す。 */
+/** Returns the Slack webhook URL, or undefined if unset (logs a one-time notice in that case). */
 export function getSlackWebhookUrl(): string | undefined {
   const config = loadUserConfig();
   const url = config.slackWebhookUrl?.trim();
@@ -52,6 +52,6 @@ function warnMissingWebhookOnce(): void {
   if (hasWarnedMissingWebhook) return;
   hasWarnedMissingWebhook = true;
   logger.info(
-    `Slack Webhook URLが未設定のためSlack通知は無効です。設定するには ${USER_CONFIG_FILE_PATH} を作成してください（例: { "slackWebhookUrl": "https://hooks.slack.com/services/..." }）`
+    `Slack notifications are disabled because no Slack webhook URL is configured. To enable them, create ${USER_CONFIG_FILE_PATH} (e.g. { "slackWebhookUrl": "https://hooks.slack.com/services/..." })`
   );
 }

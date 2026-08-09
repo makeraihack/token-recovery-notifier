@@ -22,7 +22,7 @@ function write(level: LogLevel, message: string): void {
     ensureLogDir();
     fs.appendFileSync(LOG_FILE_PATH, line + "\n");
   } catch {
-    // ログファイルへの書き込み失敗はアプリ本体の動作を止めない
+    // A failure to write the log file should never stop the app itself
   }
 }
 

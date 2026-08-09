@@ -1,8 +1,9 @@
 import { logger } from "../logger";
 
-// セッション上限: "resets 11pm (Etc/GMT-9)" のように時刻のみ。
-// 週次上限: "resets Aug 1, 10pm (Etc/GMT-9)" のように月名+日付が前置される（実データで確認済み）。
-// 月名部分はグループ1・2としてオプショナルにし、両方のフォーマットを1つの正規表現でカバーする。
+// Session limit: time only, e.g. "resets 11pm (Etc/GMT-9)".
+// Weekly limit: prefixed with a month name + day, e.g. "resets Aug 1, 10pm (Etc/GMT-9)"
+// (confirmed against real data). The month/day portion is captured as optional groups 1/2
+// so a single regex covers both formats.
 const RESET_TEXT_PATTERN =
   /resets\s+(?:([A-Za-z]{3,9})\s+(\d{1,2}),\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*\(Etc\/GMT([+-]\d{1,2})\)/i;
 
@@ -21,21 +22,23 @@ const MONTH_NAME_TO_INDEX: Record<string, number> = {
   dec: 11, december: 11,
 };
 
-// 月名+日付が明示されているイベント(週次上限等)の年推定が年またぎでずれた場合の補正しきい値。
-// 例: 12月に検知した "Jan 2" は本来翌年だが、同年で組み立てると約1年近く過去になるため、
-// これより大きく過去にずれていたら翌年だったと判断してやり直す(決め打ち禁止、PLAN.mdリスク3と同じ考え方)。
+// Correction threshold for when the estimated year for an event with an explicit month+day
+// (e.g. the weekly limit) drifts across a year boundary. Example: detecting "Jan 2" in
+// December really means next year; building the date in the same year would put it nearly
+// a year in the past. If the drift into the past is larger than this threshold, assume it
+// meant next year and rebuild it (never guess blindly — same principle as PLAN.md risk 3).
 const YEAR_ROLLOVER_THRESHOLD_MS = 180 * 24 * 60 * 60 * 1000;
 
 /**
- * "Etc/GMT-9" のようなPOSIX慣習の符号反転オフセット表記を、
- * そのゾーンの「UTCからの分オフセット」に変換する（決め打ち禁止、PLAN.mdリスク3対応）。
- * 例: "Etc/GMT-9" → ローカル時刻はUTC+9 → +540分
- *     "Etc/GMT+5" → ローカル時刻はUTC-5 → -300分
+ * Converts a POSIX-style sign-inverted offset notation like "Etc/GMT-9" into that zone's
+ * "minutes offset from UTC" (never guess blindly — this addresses PLAN.md risk 3).
+ * Example: "Etc/GMT-9" -> local time is UTC+9 -> +540 minutes
+ *          "Etc/GMT+5" -> local time is UTC-5 -> -300 minutes
  */
 export function parseEtcGmtOffsetMinutes(etcGmtSignedHours: string): number {
   const hours = Number.parseInt(etcGmtSignedHours, 10);
   if (Number.isNaN(hours)) {
-    throw new Error(`Etc/GMTオフセットの数値解析に失敗しました: ${etcGmtSignedHours}`);
+    throw new Error(`Failed to parse the Etc/GMT offset as a number: ${etcGmtSignedHours}`);
   }
   return -hours * 60;
 }
@@ -47,21 +50,22 @@ function to24Hour(hour12: number, meridiem: string): number {
 }
 
 /**
- * "You've hit your session limit · resets 11pm (Etc/GMT-9)" (時刻のみ、セッション上限) や
- * "You've hit your weekly limit · resets Aug 1, 10pm (Etc/GMT-9)" (月名+日付付き、週次上限)
- * のようなテキストから、次に到来するその時刻(UTC epoch)を算出する。
+ * Computes the next upcoming occurrence of the reset time (as a UTC epoch) from text such as
+ * "You've hit your session limit · resets 11pm (Etc/GMT-9)" (time only, session limit) or
+ * "You've hit your weekly limit · resets Aug 1, 10pm (Etc/GMT-9)" (with month+day, weekly limit).
  *
- * - 月名+日付が明示されている場合(週次上限): その日付をそのまま使う。年またぎで過去に大きくずれた
- *   場合のみ翌年だったとみなす。
- * - 時刻のみの場合(セッション上限): 日付情報がないため「基準時刻以降で直近のその時刻」を採用する
- *   （セッション(5時間)上限であれば必ず24時間以内に収まるという設計上の前提）。
+ * - When a month+day is present (weekly limit): use that date as-is. Only treat it as next
+ *   year if using the current year would place it far in the past (crossing a year boundary).
+ * - When only a time is present (session limit): since there's no date, use "the next
+ *   occurrence of that time at or after the reference time" (by design, the session (5-hour)
+ *   limit is always guaranteed to fall within 24 hours).
  *
- * 未知のフォーマットの場合は例外を投げず null を返し、呼び出し側で警告ログを出す。
+ * Returns null rather than throwing for an unrecognized format; the caller logs a warning.
  */
 export function parseResetTimeText(text: string, referenceNow: Date = new Date()): Date | null {
   const match = text.match(RESET_TEXT_PATTERN);
   if (!match) {
-    logger.warn(`リセット時刻テキストのパースに失敗しました（フォーマット不一致の可能性）: "${text}"`);
+    logger.warn(`Failed to parse the reset time text (possible format mismatch): "${text}"`);
     return null;
   }
 
@@ -73,7 +77,7 @@ export function parseResetTimeText(text: string, referenceNow: Date = new Date()
   try {
     offsetMinutes = parseEtcGmtOffsetMinutes(offsetStr);
   } catch (err) {
-    logger.warn(`タイムゾーンオフセットのパースに失敗しました: "${text}" (${(err as Error).message})`);
+    logger.warn(`Failed to parse the timezone offset: "${text}" (${(err as Error).message})`);
     return null;
   }
 
@@ -86,7 +90,7 @@ export function parseResetTimeText(text: string, referenceNow: Date = new Date()
   if (monthName && dayStr) {
     const monthIndex = MONTH_NAME_TO_INDEX[monthName.toLowerCase()];
     if (monthIndex === undefined) {
-      logger.warn(`月名のパースに失敗しました（未知の月名表記の可能性）: "${text}"`);
+      logger.warn(`Failed to parse the month name (possibly an unrecognized month name): "${text}"`);
       return null;
     }
     const day = Number.parseInt(dayStr, 10);
@@ -94,8 +98,9 @@ export function parseResetTimeText(text: string, referenceNow: Date = new Date()
     let candidateShiftedMs = Date.UTC(y, monthIndex, day, hour24, minute, 0, 0);
     let candidateUtcMs = candidateShiftedMs - offsetMinutes * 60_000;
 
-    // 年またぎ補正: 例えば12月に検知した"Jan 2"を同年で組み立てると約1年前になってしまうため、
-    // 大きく過去にずれている場合のみ翌年だったとみなしてやり直す。
+    // Year-boundary correction: e.g. building "Jan 2" detected in December using the same
+    // year would land nearly a year in the past, so only assume next year if the drift into
+    // the past is large enough, then rebuild.
     if (nowMs - candidateUtcMs > YEAR_ROLLOVER_THRESHOLD_MS) {
       candidateShiftedMs = Date.UTC(y + 1, monthIndex, day, hour24, minute, 0, 0);
       candidateUtcMs = candidateShiftedMs - offsetMinutes * 60_000;

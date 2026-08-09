@@ -1,6 +1,7 @@
-﻿# タスクトレイアイコンを表示するヘルパースクリプト。
-# Node側から子プロセスとして起動され、メニュークリック時に標準出力へ合図の文字列を出力して
-# Node側にハンドリングさせる("EXIT"=終了、"REGISTER_LOGON_TASK"=ログオン時起動の登録要求)。
+# Helper script that shows the tray icon.
+# Launched as a child process from Node. On a menu click, it writes a signal string to
+# stdout for Node to handle ("EXIT" = exit, "REGISTER_LOGON_TASK" = request to register
+# logon-time startup).
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
@@ -12,9 +13,9 @@ $notifyIcon.Text = "Token Recovery Notifier"
 $notifyIcon.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
-$registerItem = New-Object System.Windows.Forms.ToolStripMenuItem "ログオン時起動を登録..."
+$registerItem = New-Object System.Windows.Forms.ToolStripMenuItem "Register logon-time startup..."
 $menu.Items.Add($registerItem) | Out-Null
-$exitItem = New-Object System.Windows.Forms.ToolStripMenuItem "終了"
+$exitItem = New-Object System.Windows.Forms.ToolStripMenuItem "Exit"
 $menu.Items.Add($exitItem) | Out-Null
 $notifyIcon.ContextMenuStrip = $menu
 

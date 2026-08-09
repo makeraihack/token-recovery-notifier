@@ -3,50 +3,54 @@ import path from "node:path";
 
 export const APP_NAME = "Token Recovery Notifier";
 
-// Claude Code CLIがセッションtranscriptを書き出すディレクトリ（非公式・要監視対象）
+// Directory where Claude Code CLI writes session transcripts (unofficial, must be watched)
 export const CLAUDE_PROJECTS_DIR = path.join(os.homedir(), ".claude", "projects");
 
-// jsonl/subagentのjsonlを両方対象にする
+// Cover both top-level and subagent jsonl files
 export const JSONL_GLOB = "**/*.jsonl";
 
-// tail読み取りのポーリング間隔補助（fs.watchのfsイベントを主とし、これは保険のポーリング）
+// Fallback polling interval for tail reads (fs.watch events are primary; this is a safety net)
 export const WATCH_POLL_INTERVAL_MS = 3000;
 
-// アプリ起動時、各ファイルの「末尾から何バイトを遡って直近のrate_limitイベントを
-// スキャンするか」の上限。transcriptは数万行規模になり得るため全体走査は避け、
-// 起動直前に発生した(まだリセットされていない可能性がある)直近のイベントのみを
-// 対象にする。あるレート制限イベントがまだ有効(リセット未到来)なら、CLIはその後
-// 正常な応答を書き込めないため、当該イベントは実質的にファイル末尾付近に位置する。
+// Upper bound, in bytes, on how far back from the end of a file we scan on app startup
+// to find the most recent rate_limit event. Transcripts can grow to tens of thousands of
+// lines, so a full scan is avoided; only the most recent event (which may not have reset
+// yet) matters. If a rate-limit event is still active (not yet reset), the CLI can't write
+// further normal responses after it, so that event is effectively near the end of the file.
 export const STARTUP_SCAN_MAX_BYTES = 256 * 1024;
 
 export const LOG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "app.log");
 
-// Slack Webhook URLなどユーザー固有の設定を置くファイル(任意・未設定でも動作する)
+// File for user-specific settings such as the Slack webhook URL (optional, works fine if absent)
 export const USER_CONFIG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "config.json");
 
-// 旧バージョンで使っていたレジストリRunキー。「ログイン時に一度だけ起動を試みる」だけで、
-// クラッシュや強制終了で落ちた後は次回ログインまで復旧しない欠点が実際に起きた
-// (通知が一週間近く止まっていた)ため、タスクスケジューラ管理へ移行した。
-// 過去バージョンの登録が残っていれば起動時に自動で削除する(二重起動防止)。
+// Legacy registry Run key used by older versions. It only tries to launch once at sign-in,
+// so if the app crashed or was force-killed, it wouldn't recover until the next sign-in
+// (this actually happened — notifications stayed silent for nearly a week). Startup handling
+// has since moved to Task Scheduler; any leftover registration from an older version is
+// removed automatically on startup to avoid launching the app twice.
 export const AUTOLAUNCH_REGISTRY_KEY =
   "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 export const AUTOLAUNCH_VALUE_NAME = "TokenRecoveryNotifier";
 
-// ログオン時にアプリ本体を起動するタスク。
-// schtasksでのONLOGONトリガー作成には管理者権限が必要(通常権限だとAccess is denied)なため、
-// 「Start-Process -Verb RunAs」でUACダイアログを出して登録する(初回起動時 or タスクトレイメニューから)。
+// Task that launches the app at logon.
+// Creating a Task Scheduler task with an ONLOGON trigger via schtasks requires administrator
+// privileges (a standard user gets "Access is denied"), so it's registered via
+// "Start-Process -Verb RunAs" to trigger a UAC prompt (either on first launch or from the
+// tray menu).
 export const AUTOLAUNCH_LOGON_TASK_NAME = "TokenRecoveryNotifier";
 
-// 自動起動時、ウィンドウを一切表示せずnode.exeを起動するためのVBScriptランチャーの保存先。
-// (直接node.exeをタスクに登録すると、起動毎にコンソールウィンドウが表示され、
-// 誤って閉じられると常駐が止まってしまうため、非表示起動の中継役として使う)
+// Location of the VBScript launcher used to start node.exe with no visible window at all.
+// (Registering node.exe directly as the task action would show a console window on every
+// launch, and accidentally closing it would kill the resident app, so this VBScript is used
+// as a hidden-launch relay.)
 export const AUTOLAUNCH_LAUNCHER_SCRIPT_PATH = path.join(
   os.homedir(),
   ".token-recovery-notifier",
   "launcher.vbs"
 );
 
-// ログオン時起動タスクをUAC昇格つきで登録するためのPowerShellスクリプトの保存先。
+// Location of the PowerShell script used to register the logon-time task with UAC elevation.
 export const AUTOLAUNCH_ELEVATE_SCRIPT_PATH = path.join(
   os.homedir(),
   ".token-recovery-notifier",

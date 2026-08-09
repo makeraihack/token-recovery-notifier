@@ -4,17 +4,17 @@ import { logger } from "../logger";
 import type { RateLimitKind } from "../parser/rateLimitParser";
 
 function labelFor(kind: RateLimitKind): string {
-  if (kind === "weekly") return "週次";
-  if (kind === "session") return "セッション";
+  if (kind === "weekly") return "weekly";
+  if (kind === "session") return "session";
   return "";
 }
 
-/** Windows Toast通知(Action Center通知)でリセットを知らせる。外部プッシュ通知サービスには依存しない。 */
+/** Notifies about a reset via a Windows toast (Action Center) notification. Does not rely on any external push notification service. */
 export function sendResetNotification(kind: RateLimitKind): void {
   const label = labelFor(kind);
   const message = label
-    ? `Claude Codeの${label}利用上限がリセットされました。作業を再開できます。`
-    : "Claude Codeの利用上限がリセットされました。作業を再開できます。";
+    ? `Your Claude Code ${label} usage limit has reset. You can resume working.`
+    : "Your Claude Code usage limit has reset. You can resume working.";
 
   notifier.notify(
     {
@@ -24,7 +24,7 @@ export function sendResetNotification(kind: RateLimitKind): void {
     },
     (err) => {
       if (err) {
-        logger.error(`Toast通知の送信に失敗しました: ${err.message}`);
+        logger.error(`Failed to send toast notification: ${err.message}`);
       }
     }
   );

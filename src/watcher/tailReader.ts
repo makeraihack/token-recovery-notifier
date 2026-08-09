@@ -8,8 +8,8 @@ interface FileTailState {
 }
 
 /**
- * 複数ファイルの「追記された新しい行のみ」を差分tailで読み取る。
- * transcriptファイルは数万行規模になり得るため、全体再読み込みは行わない。
+ * Reads only the newly appended lines from multiple files using an incremental tail.
+ * Transcript files can grow to tens of thousands of lines, so a full re-read is never done.
  */
 export class TailReader {
   private readonly state = new Map<string, FileTailState>();
@@ -19,18 +19,17 @@ export class TailReader {
   }
 
   /**
-   * ファイル初回検知時、末尾から最大maxScanBytesバイトだけを遡って走査し、
-   * その範囲に含まれる完全な行を返す（アプリ起動時に既に発生していた、まだ
-   * リセット前かもしれないrate_limitイベントを取りこぼさないための一度きりの
-   * バックログスキャン）。全体再読み込みは避け、以降はreadNewLinesによる
-   * 差分tailに切り替わる。
+   * The first time a file is seen, scans back at most maxScanBytes from the end and returns
+   * the complete lines within that range (a one-time backlog scan so a rate_limit event that
+   * was already in progress — and possibly not yet reset — when the app started isn't missed).
+   * Avoids a full re-read; subsequent reads switch to the incremental tail in readNewLines.
    */
   async scanTailForBaseline(filePath: string, maxScanBytes: number): Promise<string[]> {
     let stat: fs.Stats;
     try {
       stat = await fsp.stat(filePath);
     } catch {
-      logger.warn(`ファイルのstatに失敗しました（削除された可能性があります）: ${filePath}`);
+      logger.warn(`Failed to stat file (it may have been deleted): ${filePath}`);
       return [];
     }
 
@@ -51,7 +50,7 @@ export class TailReader {
 
     const split = buffer.toString("utf8").split("\n");
     const pending = split.pop() ?? "";
-    // startが0より大きい場合、先頭要素は任意バイト位置から読み始めた断片行なので破棄する
+    // If start is greater than 0, the first element is a fragment line that began mid-file, so discard it
     const lines = start > 0 ? split.slice(1) : split;
 
     this.state.set(filePath, { offset: stat.size, pending });
@@ -63,21 +62,22 @@ export class TailReader {
     try {
       stat = await fsp.stat(filePath);
     } catch {
-      logger.warn(`ファイルのstatに失敗しました（削除された可能性があります）: ${filePath}`);
+      logger.warn(`Failed to stat file (it may have been deleted): ${filePath}`);
       this.state.delete(filePath);
       return [];
     }
 
     const current = this.state.get(filePath);
     if (!current) {
-      // readNewLinesが先に呼ばれた場合(想定外の呼び出し順)も、全体再読み込みは避けて
-      // baselineのみ設定する。バックログスキャンはscanTailForBaselineの責務。
+      // If readNewLines is called before a baseline exists (an unexpected call order),
+      // still avoid a full re-read and just set the baseline. Backlog scanning is
+      // scanTailForBaseline's responsibility.
       this.state.set(filePath, { offset: stat.size, pending: "" });
       return [];
     }
 
     if (stat.size < current.offset) {
-      logger.warn(`ファイルが縮小されていました（ローテーション/切り詰めの可能性）。先頭から再監視します: ${filePath}`);
+      logger.warn(`File shrank (possibly rotated or truncated). Re-watching from the start: ${filePath}`);
       current.offset = 0;
       current.pending = "";
     }

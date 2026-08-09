@@ -21,9 +21,9 @@ async function listJsonlFiles(root: string): Promise<string[]> {
 }
 
 /**
- * `~/.claude/projects/**\/*.jsonl` を横断監視し、新規追記行から
- * レート制限ヒットを検知する。監視対象ディレクトリの動的な増減
- * (プロジェクト追加/セッション新規作成)に追従する。
+ * Watches `~/.claude/projects/**\/*.jsonl` across all projects and detects rate-limit hits
+ * from newly appended lines. Follows dynamic changes to the watched directory (new projects
+ * added, new sessions created).
  */
 export class ProjectsWatcher {
   private readonly tailReader = new TailReader();
@@ -54,7 +54,7 @@ export class ProjectsWatcher {
 
     if (!fs.existsSync(CLAUDE_PROJECTS_DIR)) {
       logger.warn(
-        `監視対象ディレクトリがまだ存在しません（Claude Codeが未実行の可能性）: ${CLAUDE_PROJECTS_DIR}。定期的に再確認します。`
+        `The watched directory doesn't exist yet (Claude Code may not have run yet): ${CLAUDE_PROJECTS_DIR}. Will keep checking periodically.`
       );
       return;
     }
@@ -70,19 +70,19 @@ export class ProjectsWatcher {
         }
       );
       this.fsWatcher.on("error", (err) => {
-        logger.error(`ファイル監視中にエラーが発生しました: ${(err as Error).message}`);
+        logger.error(`An error occurred while watching files: ${(err as Error).message}`);
       });
-      logger.info(`監視を開始しました: ${CLAUDE_PROJECTS_DIR}`);
+      logger.info(`Started watching: ${CLAUDE_PROJECTS_DIR}`);
       await this.reconcile();
     } catch (err) {
-      logger.error(`fs.watchの開始に失敗しました: ${(err as Error).message}`);
+      logger.error(`Failed to start fs.watch: ${(err as Error).message}`);
       this.fsWatcher = null;
     }
   }
 
   /**
-   * fs.watchの取りこぼし(深い階層でのイベント欠落等)に備えた保険のポーリング。
-   * 監視ディレクトリが後から作成された場合の再アタッチもここで行う。
+   * Fallback polling in case fs.watch misses events (e.g. events dropped in deeply nested
+   * paths). Also handles re-attaching if the watched directory is created later.
    */
   private async reconcile(): Promise<void> {
     if (this.stopped) return;
@@ -103,7 +103,7 @@ export class ProjectsWatcher {
       if (!currentSet.has(tracked)) {
         this.trackedFiles.delete(tracked);
         this.tailReader.forget(tracked);
-        logger.info(`監視対象ファイルが削除されたため追跡を停止しました: ${tracked}`);
+        logger.info(`Watched file was deleted, stopped tracking it: ${tracked}`);
       }
     }
   }
@@ -117,7 +117,7 @@ export class ProjectsWatcher {
         ? await this.tailReader.scanTailForBaseline(filePath, STARTUP_SCAN_MAX_BYTES)
         : await this.tailReader.readNewLines(filePath);
     } catch (err) {
-      logger.error(`tail読み取り中にエラーが発生しました: ${filePath} (${(err as Error).message})`);
+      logger.error(`An error occurred while tail-reading: ${filePath} (${(err as Error).message})`);
       return;
     }
 
@@ -126,7 +126,7 @@ export class ProjectsWatcher {
       try {
         event = parseRateLimitLine(line, filePath);
       } catch (err) {
-        logger.warn(`行の解析中に予期しないエラーが発生しました: ${filePath} (${(err as Error).message})`);
+        logger.warn(`An unexpected error occurred while parsing a line: ${filePath} (${(err as Error).message})`);
         continue;
       }
       if (event) {

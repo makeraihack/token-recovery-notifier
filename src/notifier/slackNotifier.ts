@@ -6,16 +6,16 @@ import type { RateLimitKind } from "../parser/rateLimitParser";
 import { getSlackWebhookUrl } from "../userConfig";
 
 function labelFor(kind: RateLimitKind): string {
-  if (kind === "weekly") return "週次";
-  if (kind === "session") return "セッション";
+  if (kind === "weekly") return "weekly";
+  if (kind === "session") return "session";
   return "";
 }
 
 function buildMessageText(kind: RateLimitKind): string {
   const label = labelFor(kind);
   return label
-    ? `[${APP_NAME}] Claude Codeの${label}利用上限がリセットされました。作業を再開できます。`
-    : `[${APP_NAME}] Claude Codeの利用上限がリセットされました。作業を再開できます。`;
+    ? `[${APP_NAME}] Your Claude Code ${label} usage limit has reset. You can resume working.`
+    : `[${APP_NAME}] Your Claude Code usage limit has reset. You can resume working.`;
 }
 
 function postJson(webhookUrl: string, body: string): Promise<void> {
@@ -28,7 +28,7 @@ function postJson(webhookUrl: string, body: string): Promise<void> {
       return;
     }
 
-    // ローカル検証用のhttpサーバーにも対応できるよう、プロトコルに応じてモジュールを切り替える
+    // Switch transport based on the protocol so a local test http server also works
     const transport = url.protocol === "http:" ? http : https;
 
     const req = transport.request(
@@ -48,7 +48,7 @@ function postJson(webhookUrl: string, body: string): Promise<void> {
         if (statusCode >= 200 && statusCode < 300) {
           resolve();
         } else {
-          reject(new Error(`Slack Webhookが失敗ステータスを返しました: ${statusCode}`));
+          reject(new Error(`Slack webhook returned a failure status: ${statusCode}`));
         }
       }
     );
@@ -60,8 +60,8 @@ function postJson(webhookUrl: string, body: string): Promise<void> {
 }
 
 /**
- * Slack Incoming Webhook経由でリセットを知らせる。Webhook URL未設定時は何もしない(呼び出し元でエラー扱いしない)。
- * 送信失敗はログに残すのみで、アプリ本体は落とさない。
+ * Notifies about a reset via a Slack Incoming Webhook. No-op if no webhook URL is configured
+ * (not treated as an error by the caller). A send failure is only logged; it never crashes the app.
  */
 export function sendSlackResetNotification(kind: RateLimitKind): void {
   const webhookUrl = getSlackWebhookUrl();
@@ -71,6 +71,6 @@ export function sendSlackResetNotification(kind: RateLimitKind): void {
   const body = JSON.stringify({ text });
 
   postJson(webhookUrl, body).catch((err) => {
-    logger.error(`Slack通知の送信に失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`Failed to send Slack notification: ${err instanceof Error ? err.message : String(err)}`);
   });
 }

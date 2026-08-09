@@ -7,11 +7,11 @@ import { logger } from "../logger";
 type TrayChildProcess = ChildProcessByStdio<null, Readable, Readable>;
 
 /**
- * tray.ps1をUTF-16LE+Base64にエンコードし `-EncodedCommand` で渡す。
- * PowerShell 5.1は、BOM無しUTF-8の.ps1をシステムのANSIコードページ(cp932等)で
- * 誤読することがあり、日本語コメント/文字列でパースエラーになる実例が確認されている。
- * -EncodedCommandはUTF-16LE固定でNode側からバイト列を直接渡すため、
- * ファイル読み込み時のエンコーディング推定に依存せず問題を回避できる。
+ * Encodes tray.ps1 as UTF-16LE + Base64 and passes it via `-EncodedCommand`.
+ * PowerShell 5.1 can misread a BOM-less UTF-8 .ps1 file using the system ANSI code page
+ * (e.g. cp932), which has been observed to cause parse errors with non-ASCII comments or
+ * strings. -EncodedCommand is always UTF-16LE and is passed as raw bytes directly from
+ * Node, so it sidesteps encoding-detection issues when the file is read.
  */
 function buildEncodedCommand(scriptPath: string): string {
   const scriptContent = fs.readFileSync(scriptPath, "utf8").replace(/^﻿/, "");
@@ -21,10 +21,11 @@ function buildEncodedCommand(scriptPath: string): string {
 const CLIXML_HEADER_PATTERN = /^#<\s*CLIXML\s*/i;
 
 /**
- * PowerShellは-NonInteractive+パイプ実行時、エラーストリームが空でも
- * "#< CLIXML" ヘッダーだけを標準エラーへ書き出すことがある(実害のない正常動作)。
- * ヘッダーを取り除いた残りが空ならノイズとみなしtrueを返す。
- * 実際のエラー内容(例: `<S S="Error">...`)が続く場合はfalseを返し、警告扱いを維持する。
+ * When run with -NonInteractive and piped output, PowerShell can write just a "#< CLIXML"
+ * header to stderr even when there's no actual error content (harmless, expected behavior).
+ * Returns true if what remains after stripping the header is empty (treated as noise).
+ * Returns false if real error content follows (e.g. `<S S="Error">...`), which is still
+ * treated as a warning.
  */
 export function isCliXmlHeaderOnly(text: string): boolean {
   return text.replace(CLIXML_HEADER_PATTERN, "").trim().length === 0;
@@ -35,7 +36,7 @@ export interface TrayIconHandlers {
   onRegisterLogonTaskRequested: () => void;
 }
 
-/** PowerShell(System.Windows.Forms.NotifyIcon)でタスクトレイアイコンを表示する。 */
+/** Shows the tray icon via PowerShell (System.Windows.Forms.NotifyIcon). */
 export class TrayIcon {
   private child: TrayChildProcess | null = null;
 
@@ -47,7 +48,7 @@ export class TrayIcon {
     try {
       encodedCommand = buildEncodedCommand(scriptPath);
     } catch (err) {
-      logger.error(`タスクトレイスクリプトの読み込みに失敗しました: ${(err as Error).message}`);
+      logger.error(`Failed to load the tray script: ${(err as Error).message}`);
       return;
     }
 
@@ -58,7 +59,7 @@ export class TrayIcon {
         { stdio: ["ignore", "pipe", "pipe"] }
       );
     } catch (err) {
-      logger.error(`タスクトレイアイコンの起動に失敗しました: ${(err as Error).message}`);
+      logger.error(`Failed to launch the tray icon: ${(err as Error).message}`);
       return;
     }
 
@@ -74,16 +75,16 @@ export class TrayIcon {
     this.child.stderr.on("data", (data: Buffer) => {
       const text = data.toString("utf8");
       if (isCliXmlHeaderOnly(text)) return;
-      logger.warn(`タスクトレイプロセスの標準エラー出力: ${text.trim()}`);
+      logger.warn(`Standard error output from the tray process: ${text.trim()}`);
     });
     this.child.on("error", (err) => {
-      logger.error(`タスクトレイプロセスでエラーが発生しました: ${err.message}`);
+      logger.error(`An error occurred in the tray process: ${err.message}`);
     });
     this.child.on("exit", (code) => {
-      logger.info(`タスクトレイアイコンのプロセスが終了しました(code=${code})`);
+      logger.info(`The tray icon process exited (code=${code})`);
       this.child = null;
     });
-    logger.info("タスクトレイアイコンを起動しました");
+    logger.info("Started the tray icon");
   }
 
   stop(): void {

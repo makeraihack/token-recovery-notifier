@@ -1,4 +1,4 @@
-// tscはtray.ps1(非.tsファイル)をコピーしないため、ビルド後にdistへ配置する
+// tsc doesn't copy tray.ps1 (not a .ts file), so place it into dist after the build
 const fs = require("node:fs");
 const path = require("node:path");
 

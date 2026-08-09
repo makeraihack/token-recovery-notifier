@@ -10,28 +10,29 @@ import {
 } from "../config";
 import { logger } from "../logger";
 
-// dist/startup/autoLaunch.js から見た dist/index.js を起動コマンドにする
-// (将来phase Bで単一exeへパッケージングする際は、ここを実行ファイルパスに差し替える必要がある)
+// Builds the launch command for dist/index.js as seen from dist/startup/autoLaunch.js
+// (if this is ever packaged into a single exe in a future phase, this path needs to be
+// swapped for the executable's path)
 function buildNodeCommand(): { nodeExe: string; entry: string } {
   const nodeExe = process.execPath;
   const entry = path.join(__dirname, "..", "index.js");
   return { nodeExe, entry };
 }
 
-// VBScriptのダブルクォートエスケープ（"" にする）
+// Escapes double quotes for VBScript (turns " into "")
 function vbsQuote(value: string): string {
   return value.replace(/"/g, '""');
 }
 
-// PowerShellシングルクォート文字列内のエスケープ（' を '' にする）
+// Escapes single quotes inside a PowerShell single-quoted string (turns ' into '')
 function psSingleQuote(value: string): string {
   return value.replace(/'/g, "''");
 }
 
-// WshShell.Run の第2引数(0)がウィンドウ非表示起動を意味する。
-// タスクスケジューラの起動アクションに直接node.exeを登録するとコンソールウィンドウが出てしまい、
-// 誤って閉じられると常駐が止まる（実際にこの問題が起きた）ため、
-// このVBScriptを中継して非表示で起動する。
+// The second argument (0) to WshShell.Run means "launch with no visible window."
+// Registering node.exe directly as the Task Scheduler action would show a console window
+// on every launch, and accidentally closing it would kill the resident app (this actually
+// happened), so this VBScript is used as a hidden-launch relay.
 function writeHiddenLauncherScript(): string {
   const { nodeExe, entry } = buildNodeCommand();
   const command = `"${vbsQuote(nodeExe)}" "${vbsQuote(entry)}"`;
@@ -43,10 +44,11 @@ function writeHiddenLauncherScript(): string {
 }
 
 /**
- * ログオン時起動タスク(ONLOGONトリガー)をUAC昇格つきで登録するPowerShellスクリプトを書き出す。
- * schtasksでのONLOGONトリガー作成は通常権限だと"Access is denied"で失敗するため、
- * Start-Process -Verb RunAsで管理者権限のschtasksプロセスだけを起動しUACダイアログを出す
- * (アプリ本体を管理者として起動し直す必要はない)。
+ * Writes out a PowerShell script that registers the logon-time task (an ONLOGON trigger)
+ * with UAC elevation. Creating an ONLOGON trigger via schtasks fails with "Access is denied"
+ * under a standard user token, so Start-Process -Verb RunAs is used to launch only the
+ * schtasks process with elevation and show the UAC dialog (the app itself never needs to be
+ * relaunched as administrator).
  */
 function writeElevateRegisterScript(launcherPath: string): string {
   const taskName = psSingleQuote(AUTOLAUNCH_LOGON_TASK_NAME);
@@ -83,19 +85,19 @@ function queryTask(taskName: string): boolean {
   }
 }
 
-// 旧バージョンで使っていたレジストリRunキーの登録が残っていれば削除する
-// (ログオン時タスクと二重起動しないようにするため)
+// Removes any leftover legacy registry Run key registration from an older version
+// (to avoid launching the app twice alongside the logon-time task)
 function cleanupLegacyRegistryAutoLaunch(): void {
   try {
     execFileSync("reg", ["query", AUTOLAUNCH_REGISTRY_KEY, "/v", AUTOLAUNCH_VALUE_NAME]);
   } catch {
-    return; // 未登録なら何もしない
+    return; // Nothing to do if it isn't registered
   }
   try {
     execFileSync("reg", ["delete", AUTOLAUNCH_REGISTRY_KEY, "/v", AUTOLAUNCH_VALUE_NAME, "/f"]);
-    logger.info("旧レジストリRunキーの自動起動登録を削除しました（タスクスケジューラへ移行）");
+    logger.info("Removed the legacy registry Run key registration (migrated to Task Scheduler)");
   } catch (err) {
-    logger.warn(`旧レジストリRunキーの削除に失敗しました: ${(err as Error).message}`);
+    logger.warn(`Failed to remove the legacy registry Run key: ${(err as Error).message}`);
   }
 }
 
@@ -104,15 +106,16 @@ export function isLogonTaskRegistered(): boolean {
 }
 
 /**
- * ログオン時起動タスクをUAC昇格つきで登録する。
- * UACダイアログはユーザー操作を伴うためノンブロッキングで実行し、結果はログとコールバックで通知する。
- * タスクトレイメニューの「ログオン時起動を登録」からも、初回起動時の自動試行からも呼ばれる。
+ * Registers the logon-time startup task with UAC elevation.
+ * Runs non-blocking since the UAC dialog requires user interaction; the outcome is reported
+ * via logging and the callback. Called both from the tray menu's "Register logon-time
+ * startup..." item and from the automatic attempt on first launch.
  */
 export function requestLogonTaskRegistration(onDone?: (success: boolean) => void): void {
   const launcherPath = writeHiddenLauncherScript();
   const elevateScriptPath = writeElevateRegisterScript(launcherPath);
 
-  logger.info("ログオン時起動タスクの登録には管理者権限が必要です。確認ダイアログ(UAC)を表示します");
+  logger.info("Registering the logon-time startup task requires administrator privileges. Showing the UAC prompt");
 
   let child;
   try {
@@ -122,22 +125,22 @@ export function requestLogonTaskRegistration(onDone?: (success: boolean) => void
       { stdio: "ignore" }
     );
   } catch (err) {
-    logger.error(`ログオン時起動タスクの登録プロセスの起動に失敗しました: ${(err as Error).message}`);
+    logger.error(`Failed to launch the logon-time task registration process: ${(err as Error).message}`);
     onDone?.(false);
     return;
   }
 
   child.on("error", (err) => {
-    logger.error(`ログオン時起動タスクの登録プロセスでエラーが発生しました: ${err.message}`);
+    logger.error(`An error occurred in the logon-time task registration process: ${err.message}`);
     onDone?.(false);
   });
   child.on("exit", (code) => {
     if (code === 0) {
-      logger.info("ログオン時起動タスクを登録しました（管理者権限）");
+      logger.info("Registered the logon-time startup task (administrator privileges)");
       onDone?.(true);
     } else {
       logger.warn(
-        `ログオン時起動タスクの登録がキャンセルまたは失敗しました(code=${code})。UACで「いいえ」を選んだ可能性があります`
+        `Logon-time task registration was cancelled or failed (code=${code}). The UAC prompt may have been declined`
       );
       onDone?.(false);
     }
@@ -145,17 +148,18 @@ export function requestLogonTaskRegistration(onDone?: (success: boolean) => void
 }
 
 /**
- * 常駐に必要な自動起動関連の登録を行う。
- * - 旧レジストリRunキーが残っていれば削除
- * - ログオン時起動タスクが未登録なら、初回起動時として自動的にUAC昇格登録を試みる
- *   (タスクトレイメニュー「ログオン時起動を登録...」からいつでも再試行できる)
+ * Performs the auto-launch-related registration needed for the app to run resident.
+ * - Removes any leftover legacy registry Run key
+ * - If the logon-time startup task isn't registered yet, attempts UAC-elevated registration
+ *   as a first-launch action (can always be retried later via the tray menu's
+ *   "Register logon-time startup..." item)
  */
 export function enableAutoLaunch(): void {
   cleanupLegacyRegistryAutoLaunch();
   writeHiddenLauncherScript();
 
   if (!isLogonTaskRegistered()) {
-    logger.info("ログオン時起動タスクが未登録のため、初回登録を試みます");
+    logger.info("The logon-time startup task isn't registered yet, attempting first-time registration");
     requestLogonTaskRegistration();
   }
 }
@@ -165,10 +169,10 @@ export function disableAutoLaunch(): void {
 
   try {
     deleteTask(AUTOLAUNCH_LOGON_TASK_NAME);
-    logger.info(`自動起動タスクの登録を解除しました: ${AUTOLAUNCH_LOGON_TASK_NAME}`);
+    logger.info(`Removed the auto-launch task registration: ${AUTOLAUNCH_LOGON_TASK_NAME}`);
   } catch (err) {
     logger.warn(
-      `自動起動タスクの解除に失敗しました（未登録だった、または管理者権限が必要な可能性）: ${AUTOLAUNCH_LOGON_TASK_NAME} (${(err as Error).message})`
+      `Failed to remove the auto-launch task (it may not have been registered, or administrator privileges may be required): ${AUTOLAUNCH_LOGON_TASK_NAME} (${(err as Error).message})`
     );
   }
 }
