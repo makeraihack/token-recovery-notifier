@@ -51,7 +51,7 @@ If you want to run the TypeScript directly during development, `npm run dev` als
 - When Claude Code CLI hits a rate limit, the app detects it in the background and sends a Windows toast notification at the scheduled reset time.
 - If a rate limit was already in effect when the app started (e.g. you were away from your PC) and the reset time is still in the future, the app detects it on startup and schedules the notification.
 - To **quit**, right-click the tray icon and choose "Exit" from the menu.
-- Logs are written to `%USERPROFILE%\.token-recovery-notifier\app.log`. If something seems off, check there first.
+- Logs are written to `%USERPROFILE%\.token-recovery-notifier\app.log`. If something seems off, check there first. Once it exceeds 5MB it's automatically rotated to `app.log.1` (keeping one previous generation), so it won't grow indefinitely.
 
 ## Uninstalling
 

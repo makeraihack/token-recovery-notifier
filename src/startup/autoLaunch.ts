@@ -49,6 +49,14 @@ function writeHiddenLauncherScript(): string {
  * under a standard user token, so Start-Process -Verb RunAs is used to launch only the
  * schtasks process with elevation and show the UAC dialog (the app itself never needs to be
  * relaunched as administrator).
+ *
+ * -WindowStyle Hidden alone is not reliable for a console app launched elevated via
+ * -Verb RunAs: schtasks' own localized console output (e.g. its Japanese success message on
+ * a JP-locale Windows) has been observed to leak into the caller's terminal as mojibake
+ * (the console briefly attaches before detaching, and its native-codepage bytes get
+ * misrendered as UTF-8). Start-Process doesn't allow combining -Verb RunAs with
+ * -RedirectStandardOutput/-Error directly, so schtasks is instead wrapped in an elevated
+ * `cmd /c ... > NUL 2>&1`, which redirects both streams to the null device itself.
  */
 function writeElevateRegisterScript(launcherPath: string): string {
   const taskName = psSingleQuote(AUTOLAUNCH_LOGON_TASK_NAME);
@@ -57,8 +65,9 @@ function writeElevateRegisterScript(launcherPath: string): string {
     "$ErrorActionPreference = 'Stop'",
     `$taskName = '${taskName}'`,
     `$tr = "wscript.exe " + '${launcherQuoted}'`,
+    '$cmdLine = "schtasks /Create /TN `"$taskName`" /TR `"$tr`" /SC ONLOGON /RL LIMITED /F > NUL 2>&1"',
     "try {",
-    "    $proc = Start-Process -FilePath 'schtasks.exe' -ArgumentList @('/Create','/TN',$taskName,'/TR',$tr,'/SC','ONLOGON','/RL','LIMITED','/F') -Verb RunAs -WindowStyle Hidden -Wait -PassThru",
+    "    $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', $cmdLine) -Verb RunAs -WindowStyle Hidden -Wait -PassThru",
     "    if ($proc.ExitCode -ne 0) { exit 1 }",
     "    exit 0",
     "} catch {",

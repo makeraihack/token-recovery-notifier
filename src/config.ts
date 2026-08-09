@@ -26,6 +26,11 @@ export const STARTUP_SCAN_MAX_BYTES = 256 * 1024;
 
 export const LOG_FILE_PATH = path.join(DATA_DIR, "app.log");
 
+// Once app.log reaches this size, it's rotated to app.log.1 (overwriting any previous
+// app.log.1) and a fresh app.log is started. Without this, a long-running resident app can
+// grow the log to tens of megabytes over weeks of restarts and backlog scans.
+export const LOG_MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
 // File for user-specific settings such as the Slack webhook URL (optional, works fine if absent)
 export const USER_CONFIG_FILE_PATH = path.join(DATA_DIR, "config.json");
 

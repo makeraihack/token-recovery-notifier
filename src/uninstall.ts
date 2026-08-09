@@ -53,6 +53,13 @@ function stopRunningInstances(): void {
 // Deleting the logon-time task requires administrator privileges, same as creating it, so
 // this elevates just the schtasks call via a UAC prompt. Written to the OS temp directory
 // (not DATA_DIR) since DATA_DIR is removed later in this same run.
+//
+// schtasks is wrapped in an elevated `cmd /c ... > NUL 2>&1` rather than launched directly
+// with -WindowStyle Hidden: a console app elevated via -Verb RunAs can still briefly attach
+// its own console, and its localized output (e.g. a Japanese success message on a JP-locale
+// Windows) has been observed to leak into the caller's terminal as mojibake. Start-Process
+// doesn't allow combining -Verb RunAs with -RedirectStandardOutput/-Error directly, so cmd's
+// own redirection is used instead.
 function removeLogonTask(): void {
   const tmpDir = mkdtempSync(path.join(os.tmpdir(), "trn-uninstall-"));
   const scriptPath = path.join(tmpDir, "remove-logon-task.ps1");
@@ -60,8 +67,9 @@ function removeLogonTask(): void {
   const script = [
     "$ErrorActionPreference = 'Stop'",
     `$taskName = '${taskName}'`,
+    '$cmdLine = "schtasks /Delete /TN `"$taskName`" /F > NUL 2>&1"',
     "try {",
-    "    $proc = Start-Process -FilePath 'schtasks.exe' -ArgumentList @('/Delete','/TN',$taskName,'/F') -Verb RunAs -WindowStyle Hidden -Wait -PassThru",
+    "    $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', $cmdLine) -Verb RunAs -WindowStyle Hidden -Wait -PassThru",
     "    if ($proc.ExitCode -ne 0) { exit 1 }",
     "    exit 0",
     "} catch {",
