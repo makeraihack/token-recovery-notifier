@@ -1,5 +1,7 @@
 # Token Recovery Notifier
 
+[English](./README.en.md) | 日本語
+
 Claude Code CLIの利用上限（セッション/週次のレート制限）がリセットされたタイミングを、Windowsのトースト通知（Action Center通知）で自動的に知らせる常駐アプリです。
 
 ## これは何をするアプリか
