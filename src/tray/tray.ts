@@ -30,11 +30,16 @@ export function isCliXmlHeaderOnly(text: string): boolean {
   return text.replace(CLIXML_HEADER_PATTERN, "").trim().length === 0;
 }
 
+export interface TrayIconHandlers {
+  onExitRequested: () => void;
+  onRegisterLogonTaskRequested: () => void;
+}
+
 /** PowerShell(System.Windows.Forms.NotifyIcon)でタスクトレイアイコンを表示する。 */
 export class TrayIcon {
   private child: TrayChildProcess | null = null;
 
-  constructor(private readonly onExitRequested: () => void) {}
+  constructor(private readonly handlers: TrayIconHandlers) {}
 
   start(): void {
     const scriptPath = path.join(__dirname, "tray.ps1");
@@ -58,8 +63,12 @@ export class TrayIcon {
     }
 
     this.child.stdout.on("data", (data: Buffer) => {
-      if (data.toString("utf8").includes("EXIT")) {
-        this.onExitRequested();
+      const text = data.toString("utf8");
+      if (text.includes("EXIT")) {
+        this.handlers.onExitRequested();
+      }
+      if (text.includes("REGISTER_LOGON_TASK")) {
+        this.handlers.onRegisterLogonTaskRequested();
       }
     });
     this.child.stderr.on("data", (data: Buffer) => {

@@ -4,7 +4,7 @@ import { parseResetTimeText } from "./parser/resetTimeParser";
 import { NotificationScheduler } from "./scheduler/notificationScheduler";
 import { sendResetNotification } from "./notifier/toastNotifier";
 import { sendSlackResetNotification } from "./notifier/slackNotifier";
-import { enableAutoLaunch } from "./startup/autoLaunch";
+import { enableAutoLaunch, requestLogonTaskRegistration } from "./startup/autoLaunch";
 import { TrayIcon } from "./tray/tray";
 import { ProjectsWatcher } from "./watcher/projectsWatcher";
 
@@ -33,9 +33,15 @@ function shutdown(): void {
   process.exit(0);
 }
 
-const tray = new TrayIcon(() => {
-  logger.info("タスクトレイメニューから終了が要求されました");
-  shutdown();
+const tray = new TrayIcon({
+  onExitRequested: () => {
+    logger.info("タスクトレイメニューから終了が要求されました");
+    shutdown();
+  },
+  onRegisterLogonTaskRequested: () => {
+    logger.info("タスクトレイメニューからログオン時起動タスクの登録が要求されました");
+    requestLogonTaskRegistration();
+  },
 });
 
 process.on("SIGINT", shutdown);
