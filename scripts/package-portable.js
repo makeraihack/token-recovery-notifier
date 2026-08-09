@@ -56,10 +56,14 @@ fs.writeFileSync(path.join(STAGE_DIR, "package.json"), JSON.stringify(portablePk
 //    (node_modules is bundled as-is to keep node-notifier's bundled vendor exe as a real file)
 run("npm install --omit=dev --no-audit --no-fund", STAGE_DIR);
 
-// 5. Bundle the double-click launcher and accompanying docs
+// 5. Bundle the double-click launcher, uninstaller, and accompanying docs
 fs.writeFileSync(
   path.join(STAGE_DIR, "TokenRecoveryNotifier.cmd"),
   '@echo off\r\nnode "%~dp0dist\\index.js"\r\n'
+);
+fs.writeFileSync(
+  path.join(STAGE_DIR, "Uninstall.cmd"),
+  '@echo off\r\nnode "%~dp0dist\\uninstall.js"\r\npause\r\n'
 );
 copyIfExists(path.join(ROOT, "README.md"), path.join(STAGE_DIR, "README.md"));
 copyIfExists(path.join(ROOT, "README.en.md"), path.join(STAGE_DIR, "README.en.md"));

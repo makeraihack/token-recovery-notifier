@@ -50,8 +50,18 @@ If you want to run the TypeScript directly during development, `npm run dev` als
     - The app still works fine without this registration; you'll just need to start it manually each time.
 - When Claude Code CLI hits a rate limit, the app detects it in the background and sends a Windows toast notification at the scheduled reset time.
 - If a rate limit was already in effect when the app started (e.g. you were away from your PC) and the reset time is still in the future, the app detects it on startup and schedules the notification.
-- To **quit**, right-click the tray icon and choose "終了" (Exit) from the menu.
+- To **quit**, right-click the tray icon and choose "Exit" from the menu.
 - Logs are written to `%USERPROFILE%\.token-recovery-notifier\app.log`. If something seems off, check there first.
+
+## Uninstalling
+
+1. Double-click `Uninstall.cmd` inside the portable build's folder (or run `npm run uninstall` if running from source).
+2. Review what it's about to do and type `y` to continue. It will automatically:
+    - Stop the app if it's running
+    - Remove the logon-time startup task (**requires administrator privileges, so a UAC prompt appears** — choose "Yes")
+    - Remove any leftover legacy registry Run key registration from an older version
+    - Delete `%USERPROFILE%\.token-recovery-notifier` (the log file and settings)
+3. Finally, delete the app's own folder (the one containing `dist` and `node_modules`) yourself whenever you're ready — it's just files, so it's safe to delete at any time.
 
 ## Setting up Slack notifications (optional)
 

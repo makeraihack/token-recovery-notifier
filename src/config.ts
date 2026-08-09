@@ -3,6 +3,11 @@ import path from "node:path";
 
 export const APP_NAME = "Token Recovery Notifier";
 
+// Directory holding all of this app's own state (log, user config, generated launcher
+// scripts). Uninstall removes this directory wholesale, so nothing unrelated to the app
+// should ever be written here.
+export const DATA_DIR = path.join(os.homedir(), ".token-recovery-notifier");
+
 // Directory where Claude Code CLI writes session transcripts (unofficial, must be watched)
 export const CLAUDE_PROJECTS_DIR = path.join(os.homedir(), ".claude", "projects");
 
@@ -19,10 +24,10 @@ export const WATCH_POLL_INTERVAL_MS = 3000;
 // further normal responses after it, so that event is effectively near the end of the file.
 export const STARTUP_SCAN_MAX_BYTES = 256 * 1024;
 
-export const LOG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "app.log");
+export const LOG_FILE_PATH = path.join(DATA_DIR, "app.log");
 
 // File for user-specific settings such as the Slack webhook URL (optional, works fine if absent)
-export const USER_CONFIG_FILE_PATH = path.join(os.homedir(), ".token-recovery-notifier", "config.json");
+export const USER_CONFIG_FILE_PATH = path.join(DATA_DIR, "config.json");
 
 // Legacy registry Run key used by older versions. It only tries to launch once at sign-in,
 // so if the app crashed or was force-killed, it wouldn't recover until the next sign-in
@@ -44,15 +49,7 @@ export const AUTOLAUNCH_LOGON_TASK_NAME = "TokenRecoveryNotifier";
 // (Registering node.exe directly as the task action would show a console window on every
 // launch, and accidentally closing it would kill the resident app, so this VBScript is used
 // as a hidden-launch relay.)
-export const AUTOLAUNCH_LAUNCHER_SCRIPT_PATH = path.join(
-  os.homedir(),
-  ".token-recovery-notifier",
-  "launcher.vbs"
-);
+export const AUTOLAUNCH_LAUNCHER_SCRIPT_PATH = path.join(DATA_DIR, "launcher.vbs");
 
 // Location of the PowerShell script used to register the logon-time task with UAC elevation.
-export const AUTOLAUNCH_ELEVATE_SCRIPT_PATH = path.join(
-  os.homedir(),
-  ".token-recovery-notifier",
-  "register-logon-task.ps1"
-);
+export const AUTOLAUNCH_ELEVATE_SCRIPT_PATH = path.join(DATA_DIR, "register-logon-task.ps1");
